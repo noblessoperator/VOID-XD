@@ -1,0 +1,119 @@
+const axios = require('axios');
+const { sleep } = require('../lib/myfunc');
+const settings = require('../settings');
+
+/**
+ * Commande .pair — Génère un code de jumelage WhatsApp
+ * Utilise l'API /code du panneau web VARNOX XD V2
+ */
+async function pairCommand(sock, chatId, message, q) {
+    try {
+        if (!q) {
+            return await sock.sendMessage(chatId, {
+                text: `📱 *VOID XD V2 — Pair Code*\n\nUtilisation: *.pair <numéro>*\nExemple: *.pair 224610835573*\n\nOu visite le panneau web:\n${settings.pairApiUrl}`,
+                contextInfo: {
+                    forwardingScore: 1,
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: '120363402881295184@newsletter',
+                        newsletterName: '𝗩𝗢𝗜𝗗 𝗫𝗗  𝗩2',
+                        serverMessageId: -1
+                    }
+                }
+            });
+        }
+
+        const numbers = q.split(',')
+            .map((v) => v.replace(/[^0-9]/g, ''))
+            .filter((v) => v.length > 5 && v.length < 20);
+
+        if (numbers.length === 0) {
+            return await sock.sendMessage(chatId, {
+                text: '❌ Numéro invalide. Format: *.pair 224610835573*',
+                contextInfo: {
+                    forwardingScore: 1,
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: '120363402881295184@newsletter',
+                        newsletterName: '𝗩𝗢𝗜𝗗 𝗫𝗗  𝗩2',
+                        serverMessageId: -1
+                    }
+                }
+            });
+        }
+
+        for (const number of numbers) {
+            await sock.sendMessage(chatId, {
+                text: `⏳ Génération du code pour *${number}*...\nPatientez ~10 secondes.`,
+                contextInfo: {
+                    forwardingScore: 1,
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: '120363402881295184@newsletter',
+                        newsletterName: '𝗩𝗢𝗜𝗗 𝗫𝗗  𝗩2',
+                        serverMessageId: -1
+                    }
+                }
+            });
+
+            try {
+                // Appel à notre propre API Vercel (plus fiable qu'un service tiers)
+                const baseUrl = String(settings.pairApiUrl || '').replace(/\/+$/, '');
+                const response = await axios.get(`${baseUrl}/code`, {
+                    params: { number },
+                    timeout: 60000,
+                    validateStatus: status => status >= 200 && status < 500
+                });
+
+                if (response.data?.code && !response.data?.error) {
+                    const code = response.data.code;
+                    await sleep(2000);
+                    await sock.sendMessage(chatId, {
+                        text: `✅ *Code de jumelage WhatsApp*\n\n🔑 Code: *${code}*\n\n📱 Comment utiliser:\n1. Ouvre WhatsApp\n2. Paramètres → Appareils connectés\n3. Lier un appareil → Lier avec numéro de téléphone\n4. Entre le code ci-dessus\n\n⚠️ Le code expire en quelques minutes.`,
+                        contextInfo: {
+                            forwardingScore: 1,
+                            isForwarded: true,
+                            forwardedNewsletterMessageInfo: {
+                                newsletterJid: '120363402881295184@newsletter',
+                                newsletterName: '𝗩𝗢𝗜𝗗 𝗫𝗗  𝗩2',
+                                serverMessageId: -1
+                            }
+                        }
+                    });
+                } else {
+                    throw new Error(response.data?.message || response.data?.error || `HTTP ${response.status}`);
+                }
+            } catch (apiError) {
+                console.error('[pair.js] Erreur API:', apiError.message);
+                await sock.sendMessage(chatId, {
+                    text: `❌ Impossible de générer le code: ${apiError.message}\n\nEssaie directement sur:\n${settings.pairApiUrl}`,
+                    contextInfo: {
+                        forwardingScore: 1,
+                        isForwarded: true,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: '120363402881295184@newsletter',
+                            newsletterName: '𝗩𝗢𝗜𝗗 𝗫𝗗  𝗩2',
+                            serverMessageId: -1
+                        }
+                    }
+                });
+            }
+        }
+    } catch (error) {
+        console.error('[pair.js] Erreur générale:', error);
+        await sock.sendMessage(chatId, {
+            text: "❌ Une erreur s'est produite. Réessayez ou visite: " + settings.pairApiUrl,
+            contextInfo: {
+                forwardingScore: 1,
+                isForwarded: true,
+                forwardedNewsletterMessageInfo: {
+                    newsletterJid: '120363402881295184@newsletter',
+                    newsletterName: '𝗩𝗢𝗜𝗗 𝗫𝗗  𝗩2',
+                    serverMessageId: -1
+                }
+            }
+        });
+    }
+}
+
+module.exports = pairCommand;

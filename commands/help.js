@@ -1,0 +1,338 @@
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const settings = require('../settings');
+const { getPrefix } = require('../lib/prefix');
+
+const MENU_IMAGES = [
+  // Keep the original image as the first rotation entry.
+  path.join(__dirname, '../assets/menu-style.jpg'),
+  path.join(__dirname, '../assets/menu-style-2.jpg'),
+  path.join(__dirname, '../assets/menu-style-3.jpg'),
+  path.join(__dirname, '../assets/menu-style-4.jpg')
+];
+let menuImageCursor = 0;
+
+function nextMenuImage() {
+  for (let attempt = 0; attempt < MENU_IMAGES.length; attempt += 1) {
+    const imagePath = MENU_IMAGES[menuImageCursor % MENU_IMAGES.length];
+    menuImageCursor = (menuImageCursor + 1) % MENU_IMAGES.length;
+    if (fs.existsSync(imagePath)) return imagePath;
+  }
+  return null;
+}
+
+const channelInfo = {
+  contextInfo: {
+    forwardingScore: 1,
+    isForwarded: true,
+    forwardedNewsletterMessageInfo: {
+      newsletterJid: '120363402881295184@newsletter',
+      newsletterName: '𝗩𝗢𝗜𝗗 𝗫𝗗 𝗩2',
+      serverMessageId: -1
+    }
+  }
+};
+
+// These are the commands exposed by the current VARNOX command router.
+// Keeping them here makes the menu searchable without changing command behavior.
+const categories = [
+  {
+    key: 'confidentialite',
+    title: 'ᴄᴏɴғɪᴅᴇɴᴛɪᴀʟɪᴛé',
+    icon: '🔐',
+    aliases: ['privacy', 'securite'],
+    commands: ['antidelete', 'pmblocker', 'anticall', 'antibot', 'antilink']
+  },
+  {
+    key: 'conversion',
+    title: 'ᴄᴏɴᴠᴇʀsɪᴏɴ',
+    icon: '🔄',
+    commands: ['sticker', 'simage', 'stickertelegram', 'emojimix', 'translate', 'tts', 'attp']
+  },
+  {
+    key: 'fun',
+    title: 'ғᴜɴ',
+    icon: '🎭',
+    commands: ['joke', 'quote', 'fact', 'compliment', 'insult', 'flirt', 'truth', 'dare', 'ship', 'character']
+  },
+  {
+    key: 'fx_audio',
+    title: 'ғx_ᴀᴜᴅɪᴏ',
+    icon: '🎧',
+    aliases: ['audio', 'music'],
+    commands: ['play', 'song', 'spotify', 'lyrics', 'tts', 'attp', 'wasted']
+  },
+  {
+    key: 'groupe',
+    title: 'ɢʀᴏᴜᴘᴇ',
+    icon: '🛡️',
+    aliases: ['group', 'groupes'],
+    commands: [
+      'groupinfo', 'staff', 'tagall', 'tag', 'hidetag', 'tagnotadmin',
+      'kick', 'kickall', 'kickall2', 'promote', 'demote', 'warn', 'warnings',
+      'mute', 'unmute', 'open', 'close', 'antilink', 'antitag',
+      'antiflood', 'antispam', 'antimedia', 'antisticker', 'antivoice',
+      'antibadword', 'antibot', 'welcome', 'goodbye', 'setgname',
+      'setgdesc', 'setgpp', 'resetlink', 'delete', 'clear', 'deleteall',
+      'groupid', 'members', 'admins', 'nonadmins', 'mentionall',
+      'mentionadmins', 'mentionnonadmins', 'groupstats', 'groupcreated',
+      'rules', 'setrules', 'clearrules', 'announce', 'grouplink',
+      'revokeinvite', 'lockchat', 'unlockchat', 'restrictchat',
+      'unrestrictchat', 'slowmode', 'clearwarns', 'promoteall',
+      'demoteall', 'kickbots', 'poll', 'groupaudit', 'hijack',
+      'groupmenu', 'openchat', 'closechat', 'demoteadmin'
+    ]
+  },
+  {
+    key: 'ia',
+    title: 'AI',
+    icon: '🧠',
+    aliases: ['ai', 'intelligenceartificielle'],
+    commands: ['ai', 'chatbot', 'imagine', 'sora', 'anime']
+  },
+  {
+    key: 'image_edits',
+    title: 'ɪᴍᴀɢᴇ_ᴇᴅɪᴛs',
+    icon: '🖼️',
+    aliases: ['images', 'photo', 'photoedit'],
+    commands: ['blur', 'removebg', 'remini', 'crop', 'sticker', 'simage', 'meme', 'take']
+  },
+  {
+    key: 'logo',
+    title: 'ʟᴏɢᴏ & ᴛᴇxᴛᴇ',
+    icon: '✨',
+    aliases: ['logos', 'text'],
+    commands: ['textmaker', 'neon', 'glitch', 'fire', 'ice', 'snow', 'matrix', 'hacker', 'devil', 'sand', 'blackpink', 'thunder', 'arena']
+  },
+  {
+    key: 'outils',
+    title: 'ᴏᴜᴛɪʟs',
+    icon: '🧰',
+    aliases: ['tools', 'utilitaires'],
+    commands: ['ping', 'alive', 'owner', 'jid', 'url', 'ss', 'ssweb', 'screenshot', 'settings', 'groupinfo', 'menu', 'allmenu', 'setprefix', 'prefix', 'prefixe', 'setcmd', 'vv', 'vv2']
+  },
+  {
+    key: 'owner',
+    title: 'ᴏᴡɴᴇʀ',
+    icon: '👑',
+    aliases: ['proprietaire', 'propriétaire'],
+    commands: ['mode', 'clearsession', 'cleartmp', 'update', 'settings', 'autostatus', 'autoread', 'autotyping', 'anticall', 'pmblocker', 'setpp', 'areact', 'fakeract', 'sudo']
+  },
+  {
+    key: 'reactions',
+    title: 'ʀéᴀᴄᴛɪᴏɴs',
+    icon: '💫',
+    aliases: ['reaction', 'react'],
+    commands: ['areact', 'autoreact', 'fakeract', 'mention', 'setmention', 'heart']
+  },
+  {
+    key: 'recherche',
+    title: 'sᴇᴀʀᴄʜ',
+    icon: '🔎',
+    aliases: ['search', 'recherche'],
+    commands: ['weather', 'news', 'github', 'repo', 'url', 'lyrics']
+  },
+  {
+    key: 'statut',
+    title: 'sᴛᴀᴛᴜs',
+    icon: '📡',
+    aliases: ['status'],
+    commands: ['alive', 'ping', 'autostatus', 'autoread', 'autotyping']
+  },
+  {
+    key: 'systeme',
+    title: 'sʏsᴛèᴍᴇ',
+    icon: '⚙️',
+    aliases: ['system', 'config'],
+    commands: ['menu', 'allmenu', 'settings', 'update', 'clearsession', 'cleartmp']
+  },
+  {
+    key: 'telechargement',
+    title: 'ᴛéʟéᴄʜᴀʀɢᴇᴍᴇɴᴛ',
+    icon: '📥',
+    aliases: ['download', 'downloads', 'telechargements'],
+    commands: ['play', 'song', 'video', 'instagram', 'facebook', 'tiktok', 'spotify']
+  },
+  {
+    key: 'jeux',
+    title: 'ɢᴀᴍᴇs',
+    icon: '🎮',
+    aliases: ['games', 'game', 'jeu'],
+    commands: ['tictactoe', 'hangman', 'trivia', '8ball', 'truth', 'dare', 'ship']
+  },
+  {
+    key: 'medias',
+    title: 'ᴍéᴅɪᴀs',
+    icon: '🎨',
+    aliases: ['media', 'sticker'],
+    commands: ['sticker', 'simage', 'stickertelegram', 'stickercrop', 'gif', 'meme', 'take', 'vv', 'vv2']
+  }
+];
+
+const commandCount = settings.commandCount || 148;
+
+function normalize(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+}
+
+function nowInfo() {
+  const now = new Date();
+  return {
+    date: now.toLocaleDateString('fr-FR', { timeZone: 'Africa/Conakry' }),
+    time: now.toLocaleTimeString('fr-FR', { timeZone: 'Africa/Conakry', hour12: false }),
+    runtime: (() => {
+      const seconds = Math.floor(process.uptime());
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
+    })()
+  };
+}
+
+function menuHeader(senderNum, prefix) {
+  const info = nowInfo();
+  return (
+    `╭──⟪🤖𝗩𝗢𝗜𝗗 𝗫𝗗 𝗩𝟮⟫──╮\n` +
+    `├ ߷ ᴘʀéғɪxᴇ       : ${prefix}\n` +
+    `├ ߷ ᴏᴡɴᴇʀ         : ${settings.menuOwner || settings.botOwner || 'Void Cto'}\n` +
+    `├ ߷ ᴄᴏᴍᴍᴀɴᴅᴇs     : ${commandCount}\n` +
+    `├ ߷ ᴜᴘᴛɪᴍᴇ        : ${info.runtime}\n` +
+    `├ ߷ ᴅᴀᴛᴇ          : ${info.date}\n` +
+    `├ ߷ ʜᴇᴜʀᴇ         : ${info.time}\n` +
+    `├ ߷ ᴘʟᴀᴛᴇғᴏʀᴍᴇ    : ${process.platform.toUpperCase()}\n` +
+    `├ ߷ ᴅéᴠᴇʟᴏᴘᴘᴇᴜʀ   : ${settings.developer || settings.author || 'ʋαɾɳσx Tech'}\n` +
+    `├ ߷ ᴠᴇʀsɪᴏɴ       : ${settings.version || '2.0.0'}\n` +
+    `├ ߷ ᴜsᴇʀ          : ${senderNum && senderNum !== '?' ? `@${senderNum}` : ''}\n` +
+    `╰──────────────────╯`
+  );
+}
+
+function categoryBox(category, prefix) {
+  return (
+    `╭───⟪${category.title}⟫───╮\n` +
+    `┃❍╭━━━━━━━━━━━━━━≽\n` +
+    category.commands.map((command, index) =>
+      `┃⌬┃${String(index + 1).padStart(2, '0')} • ${prefix}${command}`
+    ).join('\n') +
+    `\n╰━━━━━━━━━━━━❍`
+  );
+}
+
+function categoryIndex(query) {
+  const normalized = normalize(query);
+  if (/^\d+$/.test(String(query).trim())) {
+    const index = Number(query) - 1;
+    return categories[index] ? index : -1;
+  }
+  return categories.findIndex(category => (
+    normalize(category.key) === normalized ||
+    normalize(category.title) === normalized ||
+    (category.aliases || []).some(alias => normalize(alias) === normalized)
+  ));
+}
+
+function overview(senderNum, prefix, notice = '') {
+  const categoryLines = categories.map((category, index) =>
+    `┃⌬┃${String(index + 1).padStart(2, '0')} • ${category.title}`
+  ).join('\n');
+
+  return (
+    `${notice ? `${notice}\n\n` : ''}` +
+    `${menuHeader(senderNum, prefix)}\n\n` +
+    `╭───⟪ᴄᴀᴛéɢᴏʀɪᴇs⟫\n` +
+    `┃❍╭━━━━━━━━━━━━━━≽\n` +
+    `${categoryLines}\n` +
+    `╰━━━━━━━━━━━━❍\n\n` +
+    `💡 ᴛᴀᴘᴇ *${prefix}menu <ɴᴜᴍéʀᴏ>* ᴏᴜ *${prefix}menu <ɴᴏᴍ>* ᴘᴏᴜʀ ᴠᴏɪʀ ᴜɴᴇ ᴄᴀᴛéɢᴏʀɪᴇ.\n` +
+    `💡 ᴛᴀᴘᴇ *${prefix}allmenu* ᴘᴏᴜʀ ᴛᴏᴜᴛ ᴀғғɪᴄʜᴇʀ.\n` +
+    `📌 ᴇxᴇᴍᴘʟᴇs : *${prefix}menu 5* • *${prefix}menu ɢʀᴏᴜᴘᴇ*\n\n` +
+    `> 𝗩𝗢𝗜𝗗 𝗫𝗗 𝗩𝟮 • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴠᴀʀɴᴏx`
+  );
+}
+
+function allMenu(senderNum, prefix) {
+  return (
+    `${menuHeader(senderNum, prefix)}\n\n` +
+    categories.map(category => categoryBox(category, prefix)).join('\n\n') +
+    `\n\n💡 ᴜᴛɪʟɪsᴇ *ᴍᴇɴᴜ* ᴘᴏᴜʀ ʀᴇᴠᴇɴɪʀ ᴀᴜx ᴄᴀᴛéɢᴏʀɪᴇs.\n` +
+    `> 𝗩𝗢𝗜𝗗 𝗫𝗗 𝗩𝟮 • ᴛᴏᴜᴛᴇs ʟᴇs ᴄᴏᴍᴍᴀɴᴅᴇs`
+  );
+}
+
+async function sendMenu(sock, chatId, message, text, senderId, withImage) {
+  const payload = {
+    caption: text,
+    mentions: [senderId],
+    ...channelInfo
+  };
+
+  if (withImage) {
+    const imagePath = nextMenuImage();
+    try {
+      if (!imagePath) throw new Error('Aucune image de menu disponible');
+      await sock.sendMessage(chatId, {
+        image: fs.readFileSync(imagePath),
+        ...payload
+      }, { quoted: message });
+      return;
+    } catch (error) {
+      console.error('[menu] image failed, sending text:', error.message);
+    }
+  }
+
+  await sock.sendMessage(chatId, {
+    text,
+    mentions: [senderId],
+    ...channelInfo
+  }, { quoted: message });
+}
+
+async function helpCommand(sock, chatId, message, query = '') {
+  const senderId = message.key.participant || message.key.remoteJid || '';
+  const senderNum = senderId.split('@')[0] || '?';
+  const prefix = getPrefix(chatId);
+  const normalizedQuery = String(query || '').trim();
+
+  if (!normalizedQuery || ['menu', 'categories', 'category'].includes(normalize(normalizedQuery))) {
+    await sendMenu(sock, chatId, message, overview(senderNum, prefix), senderId, true);
+    return;
+  }
+
+  if (['all', 'allmenu', 'full', 'tout'].includes(normalize(normalizedQuery))) {
+    await sendMenu(sock, chatId, message, allMenu(senderNum, prefix), senderId, true);
+    return;
+  }
+
+  const index = categoryIndex(normalizedQuery);
+  if (index < 0) {
+    await sendMenu(
+      sock,
+      chatId,
+      message,
+      overview(senderNum, prefix, `⚠️ ᴄᴀᴛéɢᴏʀɪᴇ ɪɴᴄᴏɴɴᴜᴇ : *${normalizedQuery}*`),
+      senderId,
+      true
+    );
+    return;
+  }
+
+  const category = categories[index];
+  await sendMenu(
+    sock,
+    chatId,
+    message,
+    `${categoryBox(category, prefix)}\n\n` +
+    `💡 ᴜᴛɪʟɪsᴇ *${prefix}menu* ᴘᴏᴜʀ ʀᴇᴠᴇɴɪʀ ᴀᴜx ᴄᴀᴛéɢᴏʀɪᴇs.\n` +
+    `> 𝗩𝗢𝗜𝗗 𝗫𝗗 𝗩𝟮 • ᴄᴀᴛéɢᴏʀɪᴇ ${index + 1}`,
+    senderId,
+    true
+  );
+}
+
+module.exports = helpCommand;
