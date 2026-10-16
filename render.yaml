@@ -1,0 +1,64 @@
+services:
+  - type: web
+    name: varnox-xd-v2
+    env: node
+    plan: starter
+    disk:
+      name: varnox-sessions
+      mountPath: /opt/render/project/src/sessions
+      sizeGB: 1
+    autoDeploy: true
+    buildCommand: npm install --legacy-peer-deps
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+      - key: OWNER_NUMBER
+        sync: false
+      - key: BOT_NUMBER
+        sync: false
+      - key: SESSION_DIR
+        value: /opt/render/project/src/sessions
+      - key: HOST
+        value: 0.0.0.0
+      - key: RESTORE_CONCURRENCY
+        value: "2"
+      - key: MESSAGE_CONCURRENCY
+        value: "4"
+      - key: MAX_MESSAGE_QUEUE
+        value: "250"
+      - key: PAIRING_RATE_MAX
+        value: "5"
+      - key: PAIRING_RATE_WINDOW_MS
+        value: "600000"
+      - key: MAX_PAIRING_RECOVERY_ATTEMPTS
+        value: "10"
+      - key: MAX_RECONNECT_ATTEMPTS
+        # 0 means retry indefinitely; only explicit WhatsApp logout stops it.
+        value: "0"
+      - key: WORKER_ID
+        value: worker-1
+      - key: MAX_WORKERS
+        value: "1"
+      - key: WORKER_MAX_SESSIONS
+        value: "100"
+      - key: STORAGE
+        value: local
+      - key: SESSION_REGISTRY_FILE
+        value: /opt/render/project/src/sessions/registry.json
+      - key: ADMIN_TOKEN
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: RENDER_EXTERNAL_URL
+        fromService:
+          type: web
+          name: varnox-xd-v2
+          property: host
